@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#090a0e">
+<title>IKK TTS Playground</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#090a0e;color:#eee;
+ font-family:Inter,system-ui,sans-serif;
+ min-height:100vh;padding:20px;
+}
+.app{max-width:760px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;margin:12px 0 30px}
+.logo{font-size:22px;font-weight:800;letter-spacing:2px}
+.logo span{color:#a78bfa}
+.status{font-size:11px;color:#a1a1aa}
+.dot{display:inline-block;width:7px;height:7px;background:#4ade80;border-radius:50%;margin-right:6px}
+.hero{margin-bottom:26px}
+.hero h1{font-size:30px;margin:0 0 8px}
+.hero p{color:#858591;font-size:13px;margin:0}
+.panel{
+ background:#12131a;border:1px solid #262731;
+ border-radius:18px;padding:20px;margin-bottom:16px;
+}
+.section-title{font-size:13px;font-weight:700;margin-bottom:15px}
+label{display:block;font-size:12px;color:#a1a1aa;margin-bottom:8px}
+textarea,select{
+ width:100%;background:#0b0c11;color:white;
+ border:1px solid #30313c;border-radius:11px;
+ padding:13px;font:inherit;font-size:14px;outline:none;
+}
+textarea{height:130px;resize:vertical;line-height:1.6}
+textarea:focus,select:focus{border-color:#9b87ff}
+.counter{text-align:right;color:#71717a;font-size:11px;margin-top:7px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+button{
+ border:0;border-radius:11px;padding:14px;
+ font-weight:700;font-size:13px;cursor:pointer;
+ min-height:46px;
+}
+.primary{width:100%;background:#a78bfa;color:#100d19}
+.primary:disabled{opacity:.5;cursor:wait}
+.secondary{background:#242530;color:white}
+.controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:14px}
+.controls button{background:#22232d;color:#ddd}
+.player{
+ background:#0c0d13;border:1px solid #30313c;
+ border-radius:13px;padding:16px;margin-top:15px;
+}
+.player-title{font-size:12px;color:#aaa;margin-bottom:12px}
+audio{width:100%;height:40px}
+.progress{height:4px;background:#292a35;border-radius:5px;margin-top:10px;overflow:hidden}
+.bar{height:100%;width:0;background:#a78bfa}
+.message{font-size:12px;color:#a1a1aa;margin-top:13px;min-height:18px}
+.error{color:#fb7185}
+.success{color:#4ade80}
+footer{text-align:center;color:#555;font-size:11px;padding:20px}
+@media(max-width:450px){
+ body{padding:14px}
+ .panel{padding:16px}
+ .hero h1{font-size:25px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+ <div class="logo">IKK<span>_</span>TTS</div>
+ <div class="status"><span class="dot"></span>PLAYGROUND</div>
+</header>
+
+<section class="hero">
+ <h1>Text to Speech.</h1>
+ <p>Transform your text into natural speech with IKK TTS.</p>
+</section>
+
+<section class="panel">
+ <div class="section-title">01 / INPUT TEXT</div>
+ <label for="text">Your text</label>
+ <textarea id="text" placeholder="พิมพ์ข้อความที่ต้องการให้ AI พูดที่นี่...">Hello from IKK TTS</textarea>
+ <div class="counter"><span id="count">20</span> characters</div>
+
+ <div class="grid">
+  <div>
+   <label for="voice">Voice</label>
+   <select id="voice">
+    <option value="fable" selected>Fable</option>
+    <option value="alloy">Alloy</option>
+    <option value="echo">Echo</option>
+    <option value="onyx">Onyx</option>
+    <option value="nova">Nova</option>
+    <option value="shimmer">Shimmer</option>
+   </select>
+  </div>
+  <div>
+   <label for="model">Model</label>
+   <select id="model">
+    <option value="gpt-4o-mini-tts" selected>GPT-4o Mini TTS</option>
+    <option value="tts-1">TTS-1</option>
+    <option value="tts-1-hd">TTS-1 HD</option>
+   </select>
+  </div>
+ </div>
+</section>
+
+<section class="panel">
+ <div class="section-title">02 / GENERATION</div>
+
+ <label for="format">Output format</label>
+ <select id="format">
+  <option value="mp3">MP3</option>
+  <option value="wav">WAV</option>
+  <option value="opus">OPUS</option>
+ </select>
+
+ <div style="margin-top:18px">
+  <button class="primary" id="generate" onclick="generateTTS()">
+   ✦ Generate & Play
+  </button>
+ </div>
+
+ <div class="message" id="message">Ready to generate.</div>
+</section>
+
+<section class="panel">
+ <div class="section-title">03 / AUDIO PLAYER</div>
+ <div class="player">
+  <div class="player-title">NOW PLAYING · IKK TTS</div>
+  <audio id="audio" controls preload="none"></audio>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+ </div>
+
+ <div class="controls">
+  <button onclick="playAudio()">▶ Replay</button>
+  <button onclick="stopAudio()">■ Stop</button>
+  <button onclick="downloadAudio()">↓ Save</button>
+ </div>
+</section>
+
+<footer>IKK TTS PLAYGROUND · PERSONAL PROJECT</footer>
+</div>
+
+<script>
+const API_URL =
+"https://ikk-tts-playground--9ooa4toi.preview.emergentagent.com/api/tts/generate";
+
+const $ = id => document.getElementById(id);
+
+let currentURL = null;
+let audioBlob = null;
+
+$("text").addEventListener("input",()=>{
+ $("count").textContent=$("text").value.length;
+});
+
+$("audio").addEventListener("timeupdate",()=>{
+ const a=$("audio");
+ if(a.duration){
+  $("bar").style.width=(a.currentTime/a.duration*100)+"%";
+ }
+});
+
+$("audio").addEventListener("ended",()=>{
+ $("bar").style.width="100%";
+});
+
+function setMessage(message,type=""){
+ $("message").textContent=message;
+ $("message").className="message "+type;
+}
+
+function decodeBase64(value,mime){
+ const clean=value.replace(/^data:.*?;base64,/,"");
+ const binary=atob(clean);
+ const bytes=new Uint8Array(binary.length);
+ for(let i=0;i<binary.length;i++){
+  bytes[i]=binary.charCodeAt(i);
+ }
+ return new Blob([bytes],{type:mime});
+}
+
+async function generateTTS(){
+ const text=$("text").value.trim();
+
+ if(!text){
+  setMessage("Please enter some text.","error");
+  return;
+ }
+
+ const btn=$("generate");
+ btn.disabled=true;
+ btn.textContent="Generating...";
+ setMessage("Sending request to IKK TTS...");
+
+ try{
+  $("audio").pause();
+
+  const response=await fetch(API_URL,{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    text:text,
+    voice:$("voice").value,
+    model:$("model").value,
+    response_format:$("format").value
+   })
+  });
+
+  if(!response.ok){
+   const error=await response.text();
+   throw new Error("API "+response.status+": "+error);
+  }
+
+  const contentType=response.headers.get("content-type")||"";
+
+  if(contentType.includes("application/json")){
+   const data=await response.json();
+
+   // รองรับ URL หรือ Base64 ทั้งแบบ root และ nested data
+   const result=data.data||data.result||data;
+
+   const url=result.audio_url||result.url;
+   const base64=result.audio_base64||result.audio;
+
+   if(url && typeof url==="string"){
+    setAudioURL(url);
+   }else if(base64 && typeof base64==="string"){
+    if(base64.startsWith("http")){
+     setAudioURL(base64);
+    }else{
+     audioBlob=decodeBase64(base64,
+      "audio/"+$("format").value);
+     setAudioBlob(audioBlob);
+    }
+   }else{
+    throw new Error("ไม่พบ audio URL หรือ Base64 ใน API Response");
+   }
+
+  }else{
+   // กรณี API ส่ง Binary Audio กลับมาโดยตรง
+   audioBlob=await response.blob();
+   setAudioBlob(audioBlob);
+  }
+
+  $("audio").currentTime=0;
+  await $("audio").play();
+  setMessage("Generation complete. Playing audio!","success");
+
+ }catch(error){
+  console.error(error);
+  setMessage(error.message,"error");
+ }finally{
+  btn.disabled=false;
+  btn.textContent="✦ Generate & Play";
+ }
+}
+
+function setAudioURL(url){
+ cleanup();
+ currentURL=url;
+ $("audio").src=url;
+ $("bar").style.width="0%";
+}
+
+function setAudioBlob(blob){
+ cleanup();
+ currentURL=URL.createObjectURL(blob);
+ $("audio").src=currentURL;
+ $("bar").style.width="0%";
+}
+
+function cleanup(){
+ if(currentURL && currentURL.startsWith("blob:")){
+  URL.revokeObjectURL(currentURL);
+ }
+ currentURL=null;
+}
+
+function playAudio(){
+ if(!$("audio").src){
+  setMessage("Generate audio first.","error");
+  return;
+ }
+ $("audio").play().catch(e=>setMessage(e.message,"error"));
+}
+
+function stopAudio(){
+ $("audio").pause();
+ $("audio").currentTime=0;
+ $("bar").style.width="0%";
+}
+
+function downloadAudio(){
+ if(!currentURL){
+  setMessage("No audio available.","error");
+  return;
+ }
+ const a=document.createElement("a");
+ a.href=currentURL;
+ a.download="ikk-tts."+ $("format").value;
+ a.click();
+}
+
+window.addEventListener("beforeunload",cleanup);
+</script>
+</body>
+</html>
